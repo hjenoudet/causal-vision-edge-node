@@ -36,18 +36,28 @@ IMAGE_STATE_SPACE = {
     "healthy": get_images_by_state("healthy"),
     "scab": get_images_by_state("scab"),
     "black_rot": get_images_by_state("black_rot"),
-    "cedar_apple_rust": get_images_by_state("rust")
+    "cedar_apple_rust": get_images_by_state("cedar_apple_rust")
 }
 
 ZONES = {
     "Zone_1_Fresno": {"lat": 36.7782, "lon": -119.4179},
-    "Zone_2_Visalia": {"lat": 36.3302, "lon": -119.2921},
+    "Zone_2_Seattle": {"lat": 47.6062, "lon": -122.3321},
     "Zone_3_Bakersfield": {"lat": 35.3733, "lon": -119.0187},
-    "Zone_4_Madera": {"lat": 36.9222, "lon": -120.0658},
-    "Zone_5_Merced": {"lat": 37.3022, "lon": -120.4830}
+    "Zone_4_Asheville": {"lat": 35.5951, "lon": -82.5515},
+    "Zone_5_Charlottesville": {"lat": 38.0293, "lon": -78.4767},
+    "Zone_6_Yakima": {"lat": 46.6021, "lon": -120.5059},
+    "Zone_7_Wenatchee": {"lat": 47.4235, "lon": -120.3103},
+    "Zone_8_Traverse_City": {"lat": 44.7631, "lon": -85.6206},
+    "Zone_9_Hudson_Valley": {"lat": 41.7004, "lon": -73.9210},
+    "Zone_10_Nagano": {"lat": 36.6485, "lon": 138.1947},
+    "Zone_11_South_Tyrol": {"lat": 46.4983, "lon": 11.3548},
+    "Zone_12_Elgin": {"lat": -34.1492, "lon": 19.0125},
+    "Zone_13_Kent": {"lat": 51.2704, "lon": 0.5227},
+    "Zone_14_Lerida": {"lat": 41.6176, "lon": 0.6229},
+    "Zone_15_Hawkes_Bay": {"lat": -39.6394, "lon": 176.8392}
 }
 
-def fetch_weather_panel(days=14) -> pd.DataFrame:
+def fetch_weather_panel(days=30) -> pd.DataFrame:
     """Fetches real historical weather and calculates thermodynamic VPD."""
     start_str = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
     end_str = datetime.now().strftime('%Y-%m-%d')
@@ -82,17 +92,29 @@ def fetch_weather_panel(days=14) -> pd.DataFrame:
             
     return pd.DataFrame(data).dropna()
 
+# ... (Keep all your imports, Supabase setup, BUCKET_NAME, and ZONES the same) ...
+
 def map_biological_state(is_anomalous: bool, temp_c: float, humidity: float, precip: float) -> str:
     """Maps physical thermodynamics to biological image URLs."""
     
-    # Helper to safely pick an image, or return a chill placeholder if the bucket is empty
+    # 🚨 FIX: Supabase-native fallbacks using the standard first image of your 12-image sets
+    base_url = f"{os.environ.get('SUPABASE_URL')}/storage/v1/object/public/{BUCKET_NAME}"
+    
+    FALLBACK_IMAGES = {
+        "healthy": f"{base_url}/apple__apple_healthy_1.JPG",
+        "scab": f"{base_url}/apple__apple_scab_1.JPG",
+        "black_rot": f"{base_url}/apple__apple_black_rot_1.JPG",
+        "cedar_apple_rust": f"{base_url}/apple__apple_cedar_apple_rust_1.JPG" 
+    }
+
+    # Helper to safely pick an image, or use your guaranteed local fallback
     def safe_choice(state_key):
         images = IMAGE_STATE_SPACE.get(state_key, [])
         if images:
             return random.choice(images)
         else:
-            print(f"WARNING: No images found for {state_key} in Supabase. Proceeding without image.")
-            return None
+            print(f"⚠️ WARNING: Bucket fetch failed for '{state_key}'. Falling back to standard Supabase image: _1.JPG")
+            return FALLBACK_IMAGES.get(state_key, FALLBACK_IMAGES["healthy"])
 
     if not is_anomalous:
         return safe_choice("healthy")
@@ -104,4 +126,5 @@ def map_biological_state(is_anomalous: bool, temp_c: float, humidity: float, pre
     elif precip > 0:
         return safe_choice("cedar_apple_rust")
     
-    return safe_choice("scab") # Fallback
+    # If anomalous but weather is dry, randomize disease to test VLM discrimination and break Scab bias
+    return safe_choice(random.choice(["scab", "black_rot", "cedar_apple_rust"]))
