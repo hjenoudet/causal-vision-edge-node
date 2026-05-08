@@ -25,9 +25,9 @@ An industrial-grade, edge-deployed data pipeline combining **Causal Inference Ma
 
 ---
 
-## 🔄 The "Level 12" Workflows
+## 🔄 The Workflows
 
-1.  **The Causal Gatekeeper:** A "Low-Energy" math layer that stays asleep during nominal states. It only "wakes up" the power-hungry VLM NPU when a $p < 0.05$ causal deviation is detected.
+1.  **The Causal Gatekeeper:** A "Low-Energy" math layer that stays asleep during nominal states. It only "wakes up" the power-hungry VLM NPU when a p < 0.05 causal deviation is detected.
 2.  **The Recursive Edge-to-Cloud Loop:** Local NPU pulls from Cloud S3 $\rightarrow$ Performs Inference $\rightarrow$ Pushes JSON back to Cloud DB $\rightarrow$ UI re-renders via Realtime subscription.
 3.  **Physically-Informed Simulation:** A 15-zone "Global Twin" modeling real-world climate offsets (e.g., cool/moist Seattle vs. hot/arid Lerida) to provide the statistical variance required for LMM convergence.
 
