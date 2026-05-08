@@ -19,7 +19,7 @@ def edge_diagnostics_pipeline():
 
     @task(multiple_outputs=True)
     def run_causal_gatekeeper():
-        df = fetch_weather_panel(days=14)
+        df = fetch_weather_panel(days=30)
         results = detect_anomalies(df)
         today_data = results["today_data"]
         
@@ -51,14 +51,13 @@ def edge_diagnostics_pipeline():
 
     @task.branch
     def conditional_vlm_routing(gatekeeper_res: dict):
-        if gatekeeper_res["trigger_vlm"]: return "trigger_ollama_agent"
+        if gatekeeper_res["trigger_vlm"]: return "trigger_vlm_agent"
         return "log_healthy_state"
         
     @task
-    def trigger_ollama_agent(gatekeeper_res: dict):
-        print("Causal Gatekeeper OPEN. Waking up local Ollama VLM agent...")
+    def trigger_vlm_agent(gatekeeper_res: dict):
+        print("Causal Gatekeeper OPEN. Waking up local Native MLX NPU agent...")
         run_agentic_diagnostics()
-        # To be built in Phase 2
         
     @task
     def log_healthy_state():
@@ -67,6 +66,6 @@ def edge_diagnostics_pipeline():
     # Wire the Graph
     gatekeeper = run_causal_gatekeeper()
     branch = conditional_vlm_routing(gatekeeper)
-    gatekeeper >> branch >> [trigger_ollama_agent(gatekeeper), log_healthy_state()]
+    gatekeeper >> branch >> [trigger_vlm_agent(gatekeeper), log_healthy_state()]
 
 edge_diagnostics_pipeline()

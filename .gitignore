@@ -10,3 +10,11 @@ webserver_config.py
 airflow.cfg
 airflow.db
 tests/
+vlm_training/*
+!vlm_training/native_mlx_server.py
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pkl
+
